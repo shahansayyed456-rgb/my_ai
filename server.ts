@@ -61,7 +61,8 @@ app.use(express.json());
         return res.status(400).json({ error: "No file uploaded" });
       }
       
-      const pdfParseModule = await import("pdf-parse");
+      const pdfParsePkg = "pdf-parse";
+      const pdfParseModule = await import(pdfParsePkg);
       const pdfParse = (pdfParseModule as any).default || pdfParseModule;
       
       const data = await pdfParse(req.file.buffer);
@@ -273,7 +274,8 @@ app.use(express.json());
 
 // Vite middleware for development
 if (process.env.NODE_ENV !== "production") {
-  import("vite").then(({ createServer: createViteServer }) => {
+  const vitePkg = "vite";
+  import(vitePkg).then(({ createServer: createViteServer }) => {
     createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
