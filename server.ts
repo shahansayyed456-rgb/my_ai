@@ -1,9 +1,9 @@
 import express from "express";
 import path from "path";
-import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import dotenv from "dotenv";
 import multer from "multer";
+// @ts-ignore
 import pdfParse from "pdf-parse";
 
 dotenv.config();
@@ -52,13 +52,11 @@ const responseSchema: Schema = {
   required: ["score", "mistakes", "idealAnswer", "nextQuestion", "nextQuestionCategory", "nextQuestionDifficulty"],
 };
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
+const app = express();
 
-  app.use(express.json());
+app.use(express.json());
 
-  // API Routes
+// API Routes
   app.post("/api/upload-resume", upload.single("resume"), async (req, res) => {
     try {
       if (!req.file) {
@@ -272,24 +270,33 @@ async function startServer() {
   });
 
 
-  // Vite middleware for development
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
+// Vite middleware for development
+if (process.env.NODE_ENV !== "production") {
+  import("vite").then(({ createServer: createViteServer }) => {
+    createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
+    }).then((vite) => {
+      app.use(vite.middlewares);
+      const PORT = process.env.PORT || 3000;
+      app.listen(PORT, () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+      });
     });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+  });
+} else {
+  const distPath = path.join(process.cwd(), 'dist');
+  app.use(express.static(distPath));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+  
+  if (!process.env.VERCEL) {
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
     });
   }
-
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
 }
 
-startServer();
+export default app;
