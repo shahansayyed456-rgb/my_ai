@@ -3,8 +3,6 @@ import path from "path";
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import dotenv from "dotenv";
 import multer from "multer";
-// @ts-ignore
-import pdfParse from "pdf-parse";
 
 dotenv.config();
 
@@ -62,6 +60,9 @@ app.use(express.json());
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
       }
+      
+      const pdfParseModule = await import("pdf-parse");
+      const pdfParse = (pdfParseModule as any).default || pdfParseModule;
       
       const data = await pdfParse(req.file.buffer);
       res.json({ text: data.text });
@@ -278,9 +279,8 @@ if (process.env.NODE_ENV !== "production") {
       appType: "spa",
     }).then((vite) => {
       app.use(vite.middlewares);
-      const PORT = process.env.PORT || 3000;
-      app.listen(PORT, () => {
-        console.log(`Server running on http://localhost:${PORT}`);
+      app.listen(3000, "0.0.0.0", () => {
+        console.log(`Server running on http://localhost:3000`);
       });
     });
   });
@@ -292,9 +292,8 @@ if (process.env.NODE_ENV !== "production") {
   });
   
   if (!process.env.VERCEL) {
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
+    app.listen(3000, "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:3000`);
     });
   }
 }

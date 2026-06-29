@@ -61,17 +61,23 @@ export default function App() {
   useEffect(() => {
     const savedSetup = localStorage.getItem('hasSetup');
     if (savedSetup === 'true') {
-      const text = localStorage.getItem('resumeText') || '';
-      const qs = JSON.parse(localStorage.getItem('generatedQuestions') || '[]');
-      if (text && qs.length > 0) {
-        setResumeText(text);
-        setQuestions(qs);
-        setHasSetup(true);
-        setMode('dashboard');
-        
-        // Dynamically set first category if available
-        const categories = Array.from(new Set(qs.map((q: Question) => q.category)));
-        if (categories.length > 0) setActiveCategory(categories[0] as string);
+      try {
+        const text = localStorage.getItem('resumeText') || '';
+        const qsRaw = localStorage.getItem('generatedQuestions');
+        const qs = qsRaw && qsRaw !== 'undefined' ? JSON.parse(qsRaw) : [];
+        if (text && Array.isArray(qs) && qs.length > 0) {
+          setResumeText(text);
+          setQuestions(qs);
+          setHasSetup(true);
+          setMode('dashboard');
+          
+          // Dynamically set first category if available
+          const categories = Array.from(new Set(qs.map((q: Question) => q.category)));
+          if (categories.length > 0) setActiveCategory(categories[0] as string);
+        }
+      } catch (e) {
+        console.error('Failed to parse local storage', e);
+        localStorage.removeItem('hasSetup');
       }
     }
   }, []);
@@ -158,16 +164,20 @@ export default function App() {
   };
 
   useEffect(() => {
-    const savedConfidence = localStorage.getItem('confidenceScores');
-    if (savedConfidence) {
-      const parsed = JSON.parse(savedConfidence);
-      setConfidenceScores(parsed);
-      recalculateAreas(parsed);
-    }
+    try {
+      const savedConfidence = localStorage.getItem('confidenceScores');
+      if (savedConfidence && savedConfidence !== 'undefined') {
+        const parsed = JSON.parse(savedConfidence);
+        setConfidenceScores(parsed);
+        recalculateAreas(parsed);
+      }
 
-    const savedNotes = localStorage.getItem('userNotes');
-    if (savedNotes) {
-      setUserNotes(JSON.parse(savedNotes));
+      const savedNotes = localStorage.getItem('userNotes');
+      if (savedNotes && savedNotes !== 'undefined') {
+        setUserNotes(JSON.parse(savedNotes));
+      }
+    } catch (e) {
+      console.error('Failed to parse notes or confidence scores', e);
     }
   }, [questions]);
 
@@ -192,15 +202,19 @@ export default function App() {
   };
 
   useEffect(() => {
-    const saved = localStorage.getItem('learnedQuestions');
-    if (saved && questions.length > 0) {
-      const savedSet = new Set<string>(JSON.parse(saved));
-      setLearned(savedSet);
-      setProgress(p => ({
-        ...p,
-        masteredCount: savedSet.size,
-        overallProgress: Math.round((savedSet.size / questions.length) * 100) || 0
-      }));
+    try {
+      const saved = localStorage.getItem('learnedQuestions');
+      if (saved && saved !== 'undefined' && questions.length > 0) {
+        const savedSet = new Set<string>(JSON.parse(saved));
+        setLearned(savedSet);
+        setProgress(p => ({
+          ...p,
+          masteredCount: savedSet.size,
+          overallProgress: Math.round((savedSet.size / questions.length) * 100) || 0
+        }));
+      }
+    } catch (e) {
+      console.error('Failed to parse learned questions', e);
     }
   }, [questions]);
 

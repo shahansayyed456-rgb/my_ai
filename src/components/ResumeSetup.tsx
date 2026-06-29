@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Upload, FileText, Loader2, Play } from 'lucide-react';
 import { Question } from '../types';
+import { interviewQuestions } from '../data';
 
 interface ResumeSetupProps {
   onComplete: (data: { text: string; skills: string[]; projects: string[]; questions: Question[] }) => void;
@@ -11,6 +12,15 @@ export function ResumeSetup({ onComplete }: ResumeSetupProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleUseDemoProfile = () => {
+    onComplete({
+      text: "Experienced DevOps & Full-Stack Systems Engineer specializing in Linux Administration, AWS Cloud Solutions, CI/CD automation, and secure web application development. Proven track record of managing high-availability infrastructure and modernizing workflows.",
+      skills: ['Linux', 'Docker', 'AWS', 'Kubernetes', 'CI/CD', 'Git', 'Python', 'Nginx', 'Terraform', 'Bash Scripting', 'React', 'Node.js'],
+      projects: ['Automated Kubernetes Hybrid-Cloud Deployment', 'High-Availability Nginx Web Server Infrastructure', 'Secure Multi-Stage Continuous Integration Pipeline'],
+      questions: interviewQuestions
+    });
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -46,7 +56,10 @@ export function ResumeSetup({ onComplete }: ResumeSetupProps) {
         body: JSON.stringify({ resumeText: text })
       });
 
-      if (!analyzeRes.ok) throw new Error('Failed to analyze resume.');
+      if (!analyzeRes.ok) {
+        const errorData = await analyzeRes.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to analyze resume.');
+      }
 
       const analysisData = await analyzeRes.json();
       
@@ -82,12 +95,16 @@ export function ResumeSetup({ onComplete }: ResumeSetupProps) {
           </p>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl text-sm font-medium border border-red-100 dark:border-red-800">
-              {error}
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl text-sm font-medium border border-red-100 dark:border-red-800 text-left">
+              <p className="font-bold mb-1">Resume Processing Failed:</p>
+              <p className="opacity-90 mb-3">{error}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                💡 <strong>Tip:</strong> If you don't have an active Gemini API key configured in secrets, you can click <strong>"Try Demo Profile"</strong> below to instantly start exploring the full suite of interactive features.
+              </p>
             </div>
           )}
 
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-col items-center justify-center gap-4 w-full">
             <input 
               type="file" 
               accept=".pdf"
@@ -96,21 +113,33 @@ export function ResumeSetup({ onComplete }: ResumeSetupProps) {
               onChange={handleFileUpload}
             />
             
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading || isAnalyzing}
-              className="group relative px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-3 w-full sm:w-auto justify-center"
-            >
-              {isUploading || isAnalyzing ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Upload className="w-5 h-5 group-hover:-translate-y-1 transition-transform" />
-              )}
-              
-              <span>
-                {isUploading ? "Reading PDF..." : isAnalyzing ? "Generating Questions..." : "Upload Resume (PDF)"}
-              </span>
-            </button>
+            <div className="flex flex-col sm:flex-row gap-4 w-full justify-center items-center">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading || isAnalyzing}
+                className="group relative px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-3 w-full sm:w-auto justify-center"
+              >
+                {isUploading || isAnalyzing ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Upload className="w-5 h-5 group-hover:-translate-y-1 transition-transform" />
+                )}
+                
+                <span>
+                  {isUploading ? "Reading PDF..." : isAnalyzing ? "Generating Questions..." : "Upload Resume (PDF)"}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleUseDemoProfile}
+                disabled={isUploading || isAnalyzing}
+                className="px-8 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 font-bold rounded-xl shadow-sm transition-all disabled:opacity-70 flex items-center gap-2 w-full sm:w-auto justify-center"
+              >
+                <Play className="w-5 h-5 fill-current text-indigo-500" />
+                <span>Try Demo Profile</span>
+              </button>
+            </div>
             
             {(isUploading || isAnalyzing) && (
               <p className="text-sm text-slate-500 animate-pulse mt-2">
